@@ -33,7 +33,6 @@ WORKDIR /app
 RUN npm install -g strip-json-comments-cli
 
 # 2. Copy only package manifests to leverage Docker cache
-# CHANGED: Use a wildcard to handle a potentially missing package-lock.json
 COPY package*.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
@@ -42,7 +41,8 @@ COPY apps/web/package.json ./apps/web/
 RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
 
 # 4. Install all dependencies for the entire monorepo
-RUN npm ci --workspaces --include-workspace-root
+# CHANGED: Use `npm install` instead of `npm ci` to handle missing lock file.
+RUN npm install --workspaces --include-workspace-root
 
 # 5. Copy the rest of the source code
 COPY . .
