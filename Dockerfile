@@ -29,37 +29,27 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package*.json ./
-COPY apps/server/package*.json ./apps/server/
-COPY apps/web/package*.json ./apps/web/
+# Copy ALL files first
+COPY . .
 
-# Clean package.json files by removing comments
+# Clean package.json files by removing comments AFTER copying
 RUN sed -i '/^[[:space:]]*\/\//d' package.json 2>/dev/null || true
 RUN sed -i '/^[[:space:]]*\/\//d' apps/server/package.json 2>/dev/null || true
 RUN sed -i '/^[[:space:]]*\/\//d' apps/web/package.json 2>/dev/null || true
+RUN sed -i '/^[[:space:]]*\/\//d' shared/package.json 2>/dev/null || true
 
 # Fix known package version issues AND remove problematic ONNX dependency
 RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' package.json 2>/dev/null || true
 RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' apps/server/package.json 2>/dev/null || true
+RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' shared/package.json 2>/dev/null || true
 
 # CRITICAL: Remove or replace onnxruntime-node dependency
 RUN sed -i '/"onnxruntime-node"/d' package.json 2>/dev/null || true
 RUN sed -i '/"onnxruntime-node"/d' apps/server/package.json 2>/dev/null || true
-
-# Handle shared directory
-RUN mkdir -p ./shared
-RUN if [ -f "shared/package.json" ]; then \
-        cp shared/package*.json ./shared/; \
-        sed -i '/^[[:space:]]*\/\//d' ./shared/package.json 2>/dev/null || true; \
-        sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' ./shared/package.json 2>/dev/null || true; \
-        sed -i '/"onnxruntime-node"/d' ./shared/package.json 2>/dev/null || true; \
-    else \
-        echo "No shared package.json found, skipping..."; \
-    fi
+RUN sed -i '/"onnxruntime-node"/d' shared/package.json 2>/dev/null || true
 
 # Remove package-lock.json to force fresh install
-RUN rm -f package-lock.json apps/server/package-lock.json apps/web/package-lock.json
+RUN rm -f package-lock.json apps/server/package-lock.json apps/web/package-lock.json shared/package-lock.json
 
 # Install dependencies without ONNX issues
 RUN npm install --omit=dev --no-audit --no-fund --legacy-peer-deps
@@ -67,14 +57,12 @@ RUN npm install --omit=dev --no-audit --no-fund --legacy-peer-deps
 # Development stage
 FROM base AS development
 RUN npm install --no-audit --no-fund --legacy-peer-deps
-COPY . .
 EXPOSE 3000 5173
 CMD ["npm", "run", "dev"]
 
 # Build stage
 FROM base AS build
 RUN npm install --no-audit --no-fund --legacy-peer-deps
-COPY . .
 RUN npm run build
 
 # Production stage
