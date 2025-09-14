@@ -6,7 +6,7 @@ import { processWithHED } from './hed';
 import { preprocessRaster, binarizeImage, removeSpeckles } from './raster';
 import { generateSVG } from './svg';
 import { generateDXF } from './dxf';
-import type { TraceRequest, TraceResponse, ImageData, Polygon, ProcessingOptions } from '@shared/types';
+import type { TraceRequest, TraceResponse, ImageData, Polygon, ProcessingOptions } from '../../../../shared/types';
 
 /**
  * Main image tracing function - implements the AI-assisted Tier-2 pipeline

@@ -1,5 +1,5 @@
 // filename: apps/server/src/trace/raster.ts
-import type { ImageData } from '@shared/types';
+import type { ImageData } from '../../../../shared/types';
 
 /**
  * Raster processing utilities for deterministic image preprocessing

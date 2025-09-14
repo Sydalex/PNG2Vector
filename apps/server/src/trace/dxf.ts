@@ -1,5 +1,5 @@
 // filename: apps/server/src/trace/dxf.ts
-import type { Polygon, Point } from '@shared/types';
+import type { Polygon, Point } from '../../../../shared/types';
 
 /**
  * Generate DXF output with closed LWPOLYLINE entities

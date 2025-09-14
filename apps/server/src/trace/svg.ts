@@ -1,5 +1,5 @@
 // filename: apps/server/src/trace/svg.ts
-import type { Polygon, Point } from '@shared/types';
+import type { Polygon, Point } from '../../../../shared/types';
 
 /**
  * Generate SVG output with VectorWorks-compatible classes

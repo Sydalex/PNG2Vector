@@ -50,7 +50,12 @@ COPY . .
 RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
 
 # 7. Build both the 'server' and 'web' workspaces
+RUN echo "Starting build process..."
 RUN npm run build --workspaces
+RUN echo "Build completed. Checking dist directories:"
+RUN ls -la apps/server/ || echo "apps/server not found"
+RUN ls -la apps/server/dist/ || echo "apps/server/dist not found"
+RUN ls -la apps/web/dist/ || echo "apps/web/dist not found"
 
 # 8. Prune development-only dependencies
 RUN npm prune --production --workspaces --include-workspace-root

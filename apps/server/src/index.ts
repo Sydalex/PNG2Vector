@@ -1,6 +1,4 @@
 // filename: apps/server/src/index.ts
-// Register path mappings for runtime
-import 'module-alias/register';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -8,7 +6,7 @@ import compression from 'compression';
 import multer from 'multer';
 import path from 'path';
 import { traceImage } from './trace';
-import type { TraceRequest, TraceResponse, ErrorResponse } from '@shared/types';
+import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -161,6 +159,7 @@ app.listen(PORT, () => {
   console.log(`📁 Serving static files from: ${path.join(__dirname, '../public')}`);
   console.log(`📁 Current working directory: ${process.cwd()}`);
   console.log(`📁 Server file location: ${__dirname}`);
+  console.log(`🚀 Server started successfully with relative imports!`);
 });
 
 export default app;
