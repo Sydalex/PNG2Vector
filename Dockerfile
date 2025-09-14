@@ -23,7 +23,14 @@ WORKDIR /app
 COPY package*.json ./
 COPY apps/server/package*.json ./apps/server/
 COPY apps/web/package*.json ./apps/web/
-COPY shared/package*.json ./shared/ 2>/dev/null || true
+
+# Create shared directory and copy package.json if it exists
+RUN mkdir -p ./shared
+RUN if [ -f "shared/package.json" ]; then \
+        cp shared/package*.json ./shared/; \
+    else \
+        echo "No shared package.json found, skipping..."; \
+    fi
 
 # Install dependencies
 RUN npm ci --only=production
@@ -63,14 +70,8 @@ COPY --from=build /app/apps/web/dist ./public
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules
 
-# Create models directory and copy ONNX models if they exist
+# Create models directory
 RUN mkdir -p ./models
-RUN if [ -d "models" ]; then \
-        echo "Copying models..."; \
-        cp -r models/* ./models/ 2>/dev/null || true; \
-    else \
-        echo "No models directory found, creating empty directory"; \
-    fi
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
