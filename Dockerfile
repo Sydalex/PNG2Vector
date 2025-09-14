@@ -63,8 +63,14 @@ COPY --from=build /app/apps/web/dist ./public
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules
 
-# Copy ONNX models if they exist
-COPY models/ ./models/ 2>/dev/null || true
+# Create models directory and copy ONNX models if they exist
+RUN mkdir -p ./models
+RUN if [ -d "models" ]; then \
+        echo "Copying models..."; \
+        cp -r models/* ./models/ 2>/dev/null || true; \
+    else \
+        echo "No models directory found, creating empty directory"; \
+    fi
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
