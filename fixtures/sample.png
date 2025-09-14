@@ -1,0 +1,20 @@
+// filename: fixtures/sample.png
+# This is a placeholder for the sample PNG file
+# In a real implementation, you would place an actual PNG file here
+# For testing purposes, you can use any simple PNG image such as:
+# - A black square on white background
+# - Simple geometric shapes
+# - Text or logos to test the vectorization pipeline
+
+# To add a real PNG file:
+# 1. Create a simple test image (e.g., 100x100 black square)
+# 2. Save it as sample.png in this directory
+# 3. The file will be used for testing the complete pipeline
+
+# Example test images you could create:
+# - Simple geometric shapes (squares, circles, triangles)
+# - Text characters or simple logos
+# - Images with holes (donut shapes)
+# - Multiple separate objects
+
+# Note: Keep the file size reasonable (under 1MB) for testing purposes

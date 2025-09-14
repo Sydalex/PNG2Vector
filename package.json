@@ -1,0 +1,53 @@
+// filename: package.json
+{
+  "name": "png2vector",
+  "version": "1.0.0",
+  "description": "AI-assisted PNG to SVG/DXF converter for CAD applications",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/server && npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/server",
+    "test": "jest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "clean": "rm -rf node_modules apps/*/node_modules apps/*/dist"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/png2vector.git"
+  },
+  "keywords": [
+    "png",
+    "svg",
+    "dxf",
+    "vectorization",
+    "cad",
+    "vectorworks",
+    "archicad",
+    "ai",
+    "onnx"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
