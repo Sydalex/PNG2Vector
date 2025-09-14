@@ -1,30 +1,17 @@
 // filename: apps/server/src/index.ts
+// Simplified version to test imports step by step
 console.log('🚀 Starting PNG2Vector server...');
 
-// Add global error handlers before any imports
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
-  process.exit(1);
-});
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const multer = require('multer');
+const path = require('path');
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-console.log('📦 Loading express...');
-import express from 'express';
-console.log('✅ Express loaded');
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import multer from 'multer';
-import path from 'path';
-console.log('📦 Loading trace module...');
-// Temporarily disable trace import to test basic compilation
-// import { traceImage } from './trace';
-const traceImage = async (buffer: Buffer, request: any) => {
-  console.log('Using temporary mock trace function');
+console.log('✅ Basic imports loaded');
+// Simple trace mock function
+const traceImage = async (buffer: any, request: any) => {
   return {
     svg: '<svg><rect width="100" height="100" fill="white"/></svg>',
     dxf: Buffer.from('MOCK DXF CONTENT').toString('base64'),
@@ -36,9 +23,7 @@ const traceImage = async (buffer: Buffer, request: any) => {
     }
   };
 };
-console.log('✅ Mock trace function ready');
-console.log('📦 Loading shared types...');
-import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
+
 console.log('✅ All imports loaded successfully');
 
 const app = express();
@@ -98,74 +83,43 @@ app.get('/api/health', (req, res) => {
 });
 
 // Main trace endpoint
-app.post('/api/trace', upload.single('image'), async (req, res) => {
+app.post('/api/trace', upload.single('image'), async (req: any, res: any) => {
   const startTime = Date.now();
   
   try {
     // Validate file upload
     if (!req.file) {
-      const error: ErrorResponse = {
+      return res.status(400).json({
         error: 'No image file provided',
         code: 'MISSING_FILE'
-      };
-      return res.status(400).json(error);
+      });
     }
 
-    // Parse and validate request parameters
+    // Parse parameters
     const fidelity = parseInt(req.body.fidelity || '50', 10);
     const whiteFill = req.body.whiteFill === 'true';
-    const threshold = req.body.threshold ? parseInt(req.body.threshold, 10) : undefined;
-    const despeckleAreaMin = req.body.despeckleAreaMin ? parseInt(req.body.despeckleAreaMin, 10) : undefined;
     const useAI = req.body.useAI === 'true';
-
-    // Validate fidelity range
-    if (fidelity < 0 || fidelity > 100) {
-      const error: ErrorResponse = {
-        error: 'Fidelity must be between 0 and 100',
-        code: 'INVALID_FIDELITY'
-      };
-      return res.status(400).json(error);
-    }
-
-    // Validate threshold if provided
-    if (threshold !== undefined && (threshold < 0 || threshold > 255)) {
-      const error: ErrorResponse = {
-        error: 'Threshold must be between 0 and 255',
-        code: 'INVALID_THRESHOLD'
-      };
-      return res.status(400).json(error);
-    }
-
-    const traceRequest: TraceRequest = {
-      fidelity,
-      whiteFill,
-      threshold,
-      despeckleAreaMin,
-      useAI,
-    };
 
     console.log(`Processing trace request: fidelity=${fidelity}, whiteFill=${whiteFill}, useAI=${useAI}`);
 
-    // Process the image
-    const result = await traceImage(req.file.buffer, traceRequest);
+    // Process the image with mock function
+    const result = await traceImage(req.file.buffer, { fidelity, whiteFill, useAI });
     
     // Add total processing time
     result.metrics.timings.total = Date.now() - startTime;
 
-    console.log(`Trace completed in ${result.metrics.timings.total}ms: ${result.metrics.polygonCount} polygons, ${result.metrics.nodeCount} nodes`);
+    console.log(`Trace completed in ${result.metrics.timings.total}ms`);
 
     return res.json(result);
 
   } catch (error) {
     console.error('Trace processing error:', error);
     
-    const errorResponse: ErrorResponse = {
+    return res.status(500).json({
       error: 'Internal processing error',
       details: error instanceof Error ? error.message : 'Unknown error',
       code: 'PROCESSING_ERROR'
-    };
-    
-    return res.status(500).json(errorResponse);
+    });
   }
 });
 
@@ -175,27 +129,20 @@ app.get('*', (req, res) => {
 });
 
 // Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((error: any, req: any, res: any, next: any) => {
   console.error('Unhandled error:', error);
   
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      const errorResponse: ErrorResponse = {
-        error: 'File too large',
-        details: 'Maximum file size is 50MB',
-        code: 'FILE_TOO_LARGE'
-      };
-      return res.status(413).json(errorResponse);
-    }
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error: 'File too large',
+      details: 'Maximum file size is 50MB'
+    });
   }
 
-  const errorResponse: ErrorResponse = {
+  return res.status(500).json({
     error: 'Internal server error',
-    details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    code: 'INTERNAL_ERROR'
-  };
-  
-  return res.status(500).json(errorResponse);
+    details: error.message
+  });
 });
 
 // Start server
