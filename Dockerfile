@@ -30,22 +30,18 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # 1. Install sanitization tool globally
-# We use strip-json-comments-cli to remove comments and trailing commas
-# from package.json files, which would otherwise break `npm ci`.
 RUN npm install -g strip-json-comments-cli
 
 # 2. Copy only package manifests to leverage Docker cache
-COPY package.json package-lock.json ./
+# CHANGED: Use a wildcard to handle a potentially missing package-lock.json
+COPY package*.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 
 # 3. Sanitize all package.json and package-lock.json files recursively
-# This command finds all package manifests and overwrites them with a clean,
-# strict JSON version.
 RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
 
 # 4. Install all dependencies for the entire monorepo
-# We use `npm ci` for faster, reproducible builds.
 RUN npm ci --workspaces --include-workspace-root
 
 # 5. Copy the rest of the source code
@@ -75,7 +71,6 @@ RUN adduser --system --uid 1001 nodejs
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # 3. Copy necessary artifacts from the 'builder' stage
-# We use --chown to ensure the non-root user owns the files.
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/dist ./apps/server/dist
 COPY --from=builder --chown=nodejs:nodejs /app/apps/web/dist ./apps/web/dist
@@ -86,11 +81,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/web/package.json ./apps/web/
 # 4. Switch to the non-root user
 USER nodejs
 
-# 5. Expose the port the app will listen on. Railway injects the $PORT variable.
+# 5. Expose the port the app will listen on.
 EXPOSE 3000
 
 # 6. Add a healthcheck for Railway to monitor the application's health
-# It first tries a specific health endpoint, then falls back to the root.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:3000/api/health || curl --fail http://localhost:3000/ || exit 1
 
