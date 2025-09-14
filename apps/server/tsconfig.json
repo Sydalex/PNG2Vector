@@ -3,7 +3,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "src",
     "module": "commonjs",
     "target": "ES2022",
     "lib": ["ES2022"],
