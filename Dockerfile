@@ -44,9 +44,9 @@ RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' apps/server/pa
 RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' shared/package.json 2>/dev/null || true
 
 # CRITICAL: Remove or replace onnxruntime-node dependency
-RUN sed -i '/\"onnxruntime-node\"/d' package.json 2>/dev/null || true
-RUN sed -i '/\"onnxruntime-node\"/d' apps/server/package.json 2>/dev/null || true
-RUN sed -i '/\"onnxruntime-node\"/d' shared/package.json 2>/dev/null || true
+RUN sed -i '/"onnxruntime-node"/d' package.json 2>/dev/null || true
+RUN sed -i '/"onnxruntime-node"/d' apps/server/package.json 2>/dev/null || true
+RUN sed -i '/"onnxruntime-node"/d' shared/package.json 2>/dev/null || true
 
 # Fix TypeScript import issues - remove ONNX imports
 RUN find . -name "*.ts" -type f -exec sed -i '/import.*onnxruntime-node/d' {} \; 2>/dev/null || true
@@ -115,11 +115,18 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=8080
 
-# Copy built application
+# Copy built application (server dist is required)
 COPY --from=build /app/apps/server/dist ./dist
-COPY --from=build /app/apps/web/dist ./public 2>/dev/null || echo "No web dist found"
+
+# Copy web dist if it exists
+RUN mkdir -p ./public
+COPY --from=build /app/apps/web/dist ./public || echo "No web dist found"
+
+# Copy node_modules
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules 2>/dev/null || echo "No server node_modules found"
+
+# Copy server node_modules if they exist
+COPY --from=build /app/apps/server/node_modules ./apps/server/node_modules || echo "No server node_modules found"
 
 # Create models directory with proper permissions
 RUN mkdir -p ./models && chmod 755 ./models
