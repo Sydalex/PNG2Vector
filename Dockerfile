@@ -57,31 +57,28 @@ RUN if [ -f "shared/package.json" ]; then \
 ENV ORT_DYLIB_PATH=""
 ENV ONNXRUNTIME_PREFER_SYSTEM_LIB=0
 
-# Install production dependencies with optimizations
-RUN if [ -f "package-lock.json" ]; then \
-        npm ci --omit=dev --no-audit --no-fund || npm install --only=production --no-optional --no-audit --no-fund; \
-    else \
-        npm install --only=production --no-optional --no-audit --no-fund; \
-    fi
+# Remove package-lock.json to force fresh install
+RUN rm -f package-lock.json apps/server/package-lock.json apps/web/package-lock.json
+
+# Install dependencies with multiple fallback strategies
+RUN npm install --only=production --no-optional --no-audit --no-fund --legacy-peer-deps || \
+    npm install --only=production --no-audit --no-fund --legacy-peer-deps || \
+    npm install --production --legacy-peer-deps
 
 # Development stage
 FROM base AS development
-RUN if [ -f "package-lock.json" ]; then \
-        npm ci --no-audit --no-fund || npm install --no-optional --no-audit --no-fund; \
-    else \
-        npm install --no-optional --no-audit --no-fund; \
-    fi
+RUN npm install --no-optional --no-audit --no-fund --legacy-peer-deps || \
+    npm install --no-audit --no-fund --legacy-peer-deps || \
+    npm install --legacy-peer-deps
 COPY . .
 EXPOSE 3000 5173
 CMD ["npm", "run", "dev"]
 
 # Build stage
 FROM base AS build
-RUN if [ -f "package-lock.json" ]; then \
-        npm ci --no-audit --no-fund || npm install --no-optional --no-audit --no-fund; \
-    else \
-        npm install --no-optional --no-audit --no-fund; \
-    fi
+RUN npm install --no-optional --no-audit --no-fund --legacy-peer-deps || \
+    npm install --no-audit --no-fund --legacy-peer-deps || \
+    npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
