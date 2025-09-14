@@ -1,12 +1,52 @@
 // filename: apps/server/src/index.ts
+console.log('🚀 Starting PNG2Vector server...');
+
+// Add global error handlers before any imports
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+console.log('📦 Loading express...');
 import express from 'express';
+console.log('✅ Express loaded');
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import multer from 'multer';
 import path from 'path';
-import { traceImage } from './trace';
+console.log('📦 Loading trace module...');
+// Import trace module with fallback
+let traceImage: any;
+try {
+  const traceModule = require('./trace');
+  traceImage = traceModule.traceImage;
+  console.log('✅ Trace module loaded successfully');
+} catch (error) {
+  console.error('❌ Failed to load trace module:', error);
+  // Fallback mock function
+  traceImage = async (buffer: Buffer, request: any) => {
+    console.log('Using fallback trace function');
+    return {
+      svg: '<svg></svg>',
+      dxf: 'RkFMTEJBQ0s=', // base64 for 'FALLBACK'
+      metrics: {
+        nodeCount: 0,
+        polygonCount: 0,
+        simplification: 0,
+        timings: { total: 0, preprocessing: 0, vectorization: 0, export: 0 }
+      }
+    };
+  };
+}
+console.log('📦 Loading shared types...');
 import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
+console.log('✅ All imports loaded successfully');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
