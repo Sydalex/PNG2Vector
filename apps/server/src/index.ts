@@ -107,7 +107,7 @@ app.post('/api/trace', upload.single('image'), async (req, res) => {
 
     console.log(`Trace completed in ${result.metrics.timings.total}ms: ${result.metrics.polygonCount} polygons, ${result.metrics.nodeCount} nodes`);
 
-    res.json(result);
+    return res.json(result);
 
   } catch (error) {
     console.error('Trace processing error:', error);
@@ -118,7 +118,7 @@ app.post('/api/trace', upload.single('image'), async (req, res) => {
       code: 'PROCESSING_ERROR'
     };
     
-    res.status(500).json(errorResponse);
+    return res.status(500).json(errorResponse);
   }
 });
 
@@ -148,7 +148,7 @@ app.use((error: Error, req: express.Request, res: express.Response, next: expres
     code: 'INTERNAL_ERROR'
   };
   
-  res.status(500).json(errorResponse);
+  return res.status(500).json(errorResponse);
 });
 
 // Start server

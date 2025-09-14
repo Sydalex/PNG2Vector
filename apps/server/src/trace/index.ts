@@ -1,160 +1,151 @@
-// filename: apps/server/src/index.ts
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import multer from 'multer';
-import path from 'path';
-import { traceImage } from './trace';
-import type { TraceRequest, ErrorResponse } from '@shared/types';
+// filename: apps/server/src/trace/index.ts
+import { PNG } from 'pngjs';
+import { extractContours, simplifyContours } from './contour';
+import { validateGeometry, cleanupGeometry } from './geometry';
+import { processWithHED } from './hed';
+import { preprocessRaster, binarizeImage, removeSpeckles } from './raster';
+import { generateSVG } from './svg';
+import { generateDXF } from './dxf';
+import type { TraceRequest, TraceResponse, ImageData, Polygon, ProcessingOptions } from '@shared/types';
 
-const app = express();
-const PORT = process.env.PORT || 8080;
-
-// Security and performance middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-    },
-  },
-}));
-app.use(cors());
-app.use(compression());
-app.use(express.json({ limit: '50mb' }));
-
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
-    files: 1,
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'image/png') {
-      return cb(null, true);
-    }
-    return cb(new Error('Only PNG files are allowed'));
-  },
-});
-
-// Serve static files (built frontend)
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  return res.json({ ok: true, timestamp: new Date().toISOString() });
-});
-
-// Main trace endpoint
-app.post('/api/trace', upload.single('image'), async (req, res) => {
+/**
+ * Main image tracing function - implements the AI-assisted Tier-2 pipeline
+ */
+export async function traceImage(buffer: Buffer, request: TraceRequest): Promise<TraceResponse> {
   const startTime = Date.now();
-  
+  let timings = {
+    preprocessing: 0,
+    aiProcessing: 0,
+    vectorization: 0,
+    export: 0,
+    total: 0,
+  };
+
   try {
-    // Validate file upload
-    if (!req.file) {
-      const error: ErrorResponse = {
-        error: 'No image file provided',
-        code: 'MISSING_FILE'
-      };
-      return res.status(400).json(error);
+    // 1. Load and parse PNG image
+    const preprocessStart = Date.now();
+    const png = PNG.sync.read(buffer);
+    const imageData: ImageData = {
+      width: png.width,
+      height: png.height,
+      data: new Uint8Array(png.data),
+    };
+    
+    console.log(`Loaded PNG: ${imageData.width}x${imageData.height}`);
+
+    // 2. Optional AI preprocessing
+    let processedImage = imageData;
+    if (request.useAI) {
+      try {
+        const aiStart = Date.now();
+        processedImage = await processWithHED(imageData);
+        timings.aiProcessing = Date.now() - aiStart;
+        console.log(`AI preprocessing completed in ${timings.aiProcessing}ms`);
+      } catch (error) {
+        console.warn('AI preprocessing failed, falling back to deterministic pipeline:', error);
+        processedImage = imageData;
+      }
     }
 
-    // Parse and validate request parameters
-    const fidelity = parseInt(req.body.fidelity || '50', 10);
-    const whiteFill = req.body.whiteFill === 'true';
-    const threshold = req.body.threshold ? parseInt(req.body.threshold, 10) : undefined;
-    const despeckleAreaMin = req.body.despeckleAreaMin ? parseInt(req.body.despeckleAreaMin, 10) : undefined;
-    const useAI = req.body.useAI === 'true';
+    // 3. Deterministic raster processing
+    const options = calculateProcessingOptions(request);
+    
+    // Preprocess raster (blur, threshold, morphology)
+    processedImage = preprocessRaster(processedImage, {
+      threshold: options.threshold,
+    });
+    
+    // Binarize with threshold
+    processedImage = binarizeImage(processedImage, options.threshold);
+    
+    // Remove speckles
+    processedImage = removeSpeckles(processedImage, options.areaMin);
+    
+    timings.preprocessing = Date.now() - preprocessStart;
 
-    // Validate fidelity range
-    if (fidelity < 0 || fidelity > 100) {
-      const error: ErrorResponse = {
-        error: 'Fidelity must be between 0 and 100',
-        code: 'INVALID_FIDELITY'
-      };
-      return res.status(400).json(error);
-    }
+    // 4. Vectorization
+    const vectorStart = Date.now();
+    
+    // Extract contours using Moore neighborhood tracing
+    const contours = extractContours(processedImage);
+    console.log(`Extracted ${contours.length} raw contours`);
+    
+    // Simplify contours with Douglas-Peucker
+    const simplifiedContours = simplifyContours(contours, options.epsilon);
+    console.log(`Simplified to ${simplifiedContours.length} contours with epsilon ${options.epsilon}`);
+    
+    // Convert to polygons
+    const polygons: Polygon[] = simplifiedContours.map(contour => ({
+      exterior: contour.points,
+      holes: contour.holes,
+    }));
+    
+    // Validate and clean geometry
+    const validatedPolygons = validateGeometry(polygons);
+    const cleanPolygons = cleanupGeometry(validatedPolygons, options.areaMin);
+    
+    timings.vectorization = Date.now() - vectorStart;
+    console.log(`Vectorization completed: ${cleanPolygons.length} final polygons`);
 
-    // Validate threshold if provided
-    if (threshold !== undefined && (threshold < 0 || threshold > 255)) {
-      const error: ErrorResponse = {
-        error: 'Threshold must be between 0 and 255',
-        code: 'INVALID_THRESHOLD'
-      };
-      return res.status(400).json(error);
-    }
+    // 5. Export generation
+    const exportStart = Date.now();
+    
+    // Generate SVG
+    const svg = generateSVG(cleanPolygons, imageData.width, imageData.height, request.whiteFill);
+    
+    // Generate DXF  
+    const dxf = generateDXF(cleanPolygons, imageData.width, imageData.height, request.whiteFill);
+    const dxfBase64 = Buffer.from(dxf, 'utf8').toString('base64');
+    
+    timings.export = Date.now() - exportStart;
+    timings.total = Date.now() - startTime;
 
-    const traceRequest: TraceRequest = {
-      fidelity,
-      whiteFill,
-      threshold,
-      despeckleAreaMin,
-      useAI,
+    // Calculate metrics
+    const nodeCount = cleanPolygons.reduce((total, poly) => {
+      return total + poly.exterior.length + poly.holes.reduce((holeTotal, hole) => holeTotal + hole.length, 0);
+    }, 0);
+
+    const response: TraceResponse = {
+      svg,
+      dxf: dxfBase64,
+      metrics: {
+        nodeCount,
+        polygonCount: cleanPolygons.length,
+        simplification: options.epsilon,
+        timings,
+      },
     };
 
-    console.log(`Processing trace request: fidelity=${fidelity}, whiteFill=${whiteFill}, useAI=${useAI}`);
-
-    // Process the image
-    const result = await traceImage(req.file.buffer, traceRequest);
-    
-    // Add total processing time
-    result.metrics.timings.total = Date.now() - startTime;
-
-    console.log(`Trace completed in ${result.metrics.timings.total}ms: ${result.metrics.polygonCount} polygons, ${result.metrics.nodeCount} nodes`);
-
-    return res.json(result);
+    return response;
 
   } catch (error) {
-    console.error('Trace processing error:', error);
-    
-    const errorResponse: ErrorResponse = {
-      error: 'Internal processing error',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      code: 'PROCESSING_ERROR'
-    };
-    
-    return res.status(500).json(errorResponse);
+    console.error('Trace processing failed:', error);
+    throw error;
   }
-});
+}
 
-// Catch-all handler for SPA routing
-app.get('*', (req, res) => {
-  return res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// Global error handler
-app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', error);
+/**
+ * Calculate processing options from fidelity and other parameters
+ */
+function calculateProcessingOptions(request: TraceRequest): ProcessingOptions {
+  const fidelity = request.fidelity;
   
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      const errorResponse: ErrorResponse = {
-        error: 'File too large',
-        details: 'Maximum file size is 50MB',
-        code: 'FILE_TOO_LARGE'
-      };
-      return res.status(413).json(errorResponse);
-    }
-  }
-
-  const errorResponse: ErrorResponse = {
-    error: 'Internal server error',
-    details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    code: 'INTERNAL_ERROR'
+  // Base values for medium fidelity (50)
+  const baseEpsilon = 2.0;
+  const baseAreaMin = 100;
+  
+  // Map fidelity (0-100) to processing parameters
+  // Higher fidelity = lower epsilon (more detail), smaller minimum area
+  const epsilon = baseEpsilon * (1 - (fidelity / 100) * 0.8); // Range: 0.4 - 2.0
+  const areaMin = baseAreaMin * (1 - (fidelity / 100) * 0.9); // Range: 10 - 100
+  
+  const options: ProcessingOptions = {
+    epsilon: Math.max(0.1, epsilon),
+    areaMin: Math.max(1, request.despeckleAreaMin || areaMin),
+    threshold: request.threshold || 128,
+    useAI: request.useAI || false,
   };
   
-  return res.status(500).json(errorResponse);
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 PNG2Vector server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🎯 API endpoint: http://localhost:${PORT}/api/trace`);
-});
-
-export default app;
+  console.log(`Processing options: epsilon=${options.epsilon.toFixed(2)}, areaMin=${options.areaMin}, threshold=${options.threshold}`);
+  return options;
+}

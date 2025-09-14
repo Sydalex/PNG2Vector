@@ -153,7 +153,7 @@ function ensureClockwise(points: Point[]): Point[] {
 /**
  * Calculate signed area of polygon (positive = clockwise, negative = counter-clockwise)
  */
-function calculateSignedArea(points: Point[]): number {
+export function calculateSignedArea(points: Point[]): number {
   if (points.length < 3) return 0;
   
   let area = 0;
@@ -199,9 +199,9 @@ function fixSelfIntersections(polygon: Polygon): Polygon | null {
     }
     
     // Convert back to our format
-    const fixedExterior = firstPolygon[0].map(([x, y]: [number, number]) => ({ x, y }));
-    const fixedHoles = firstPolygon.slice(1).map((hole: any) => 
-      hole.map(([x, y]: [number, number]) => ({ x, y }))
+    const fixedExterior = (firstPolygon[0] as number[][]).map(([x, y]) => ({ x, y }));
+    const fixedHoles = firstPolygon.slice(1).map((hole: number[][]) => 
+      hole.map(([x, y]) => ({ x, y }))
     );
     
     return {
