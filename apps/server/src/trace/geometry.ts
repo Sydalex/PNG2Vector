@@ -183,7 +183,7 @@ function fixSelfIntersections(polygon: Polygon): Polygon | null {
     const holeCoords = polygon.holes.map(hole => hole.map(p => [p.x, p.y]));
     
     // Create polygon in Martinez format
-    const martinezPolygon = [exteriorCoords, ...holeCoords];
+    const martinezPolygon: martinez.Polygon = [exteriorCoords, ...holeCoords];
     
     // Use union operation with empty polygon to fix self-intersections
     const fixed = martinez.union([martinezPolygon], []);
@@ -200,7 +200,7 @@ function fixSelfIntersections(polygon: Polygon): Polygon | null {
     
     // Convert back to our format
     const fixedExterior = firstPolygon[0].map(([x, y]: [number, number]) => ({ x, y }));
-    const fixedHoles = firstPolygon.slice(1).map(hole => 
+    const fixedHoles = firstPolygon.slice(1).map((hole: any) => 
       hole.map(([x, y]: [number, number]) => ({ x, y }))
     );
     
