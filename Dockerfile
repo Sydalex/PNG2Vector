@@ -54,7 +54,9 @@ RUN echo "Starting build process..."
 RUN echo "Current directory structure:"
 RUN find . -name "package.json" -type f
 RUN echo "Building server workspace:"
-RUN npm run build --workspace=apps/server || (echo "Server build failed!" && exit 1)
+RUN echo "Server tsconfig:"
+RUN cat apps/server/tsconfig.json || echo "No tsconfig found"
+RUN npm run build --workspace=apps/server 2>&1 || (echo "❌ Server build failed!" && echo "Checking TypeScript installation:" && npx tsc --version && exit 1)
 RUN echo "Building web workspace:"
 RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
 RUN echo "Build completed. Checking dist directories:"

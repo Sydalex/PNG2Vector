@@ -1,21 +1,12 @@
 // filename: apps/server/src/trace/index.ts
-console.log('🚀 Loading trace module dependencies...');
 import { PNG } from 'pngjs';
-console.log('✅ PNG loaded');
 import { extractContours, simplifyContours } from './contour';
-console.log('✅ Contour loaded');
 import { validateGeometry, cleanupGeometry } from './geometry';
-console.log('✅ Geometry loaded');
 import { processWithHED } from './hed';
-console.log('✅ HED loaded');
 import { preprocessRaster, binarizeImage, removeSpeckles } from './raster';
-console.log('✅ Raster loaded');
 import { generateSVG } from './svg';
-console.log('✅ SVG loaded');
 import { generateDXF } from './dxf';
-console.log('✅ DXF loaded');
 import type { TraceRequest, TraceResponse, ImageData, Polygon, ProcessingOptions } from '../../../../shared/types';
-console.log('✅ All trace dependencies loaded successfully');
 
 /**
  * Main image tracing function - implements the AI-assisted Tier-2 pipeline

@@ -21,29 +21,22 @@ import compression from 'compression';
 import multer from 'multer';
 import path from 'path';
 console.log('📦 Loading trace module...');
-// Import trace module with fallback
-let traceImage: any;
-try {
-  const traceModule = require('./trace');
-  traceImage = traceModule.traceImage;
-  console.log('✅ Trace module loaded successfully');
-} catch (error) {
-  console.error('❌ Failed to load trace module:', error);
-  // Fallback mock function
-  traceImage = async (buffer: Buffer, request: any) => {
-    console.log('Using fallback trace function');
-    return {
-      svg: '<svg></svg>',
-      dxf: 'RkFMTEJBQ0s=', // base64 for 'FALLBACK'
-      metrics: {
-        nodeCount: 0,
-        polygonCount: 0,
-        simplification: 0,
-        timings: { total: 0, preprocessing: 0, vectorization: 0, export: 0 }
-      }
-    };
+// Temporarily disable trace import to test basic compilation
+// import { traceImage } from './trace';
+const traceImage = async (buffer: Buffer, request: any) => {
+  console.log('Using temporary mock trace function');
+  return {
+    svg: '<svg><rect width="100" height="100" fill="white"/></svg>',
+    dxf: Buffer.from('MOCK DXF CONTENT').toString('base64'),
+    metrics: {
+      nodeCount: 4,
+      polygonCount: 1,
+      simplification: 1.0,
+      timings: { total: 100, preprocessing: 50, vectorization: 30, export: 20 }
+    }
   };
-}
+};
+console.log('✅ Mock trace function ready');
 console.log('📦 Loading shared types...');
 import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
 console.log('✅ All imports loaded successfully');
