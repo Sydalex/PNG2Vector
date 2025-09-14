@@ -51,7 +51,7 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
     files: 1,
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: any, file: any, cb: any) => {
     if (file.mimetype === 'image/png') {
       cb(null, true);
     } else {
@@ -64,7 +64,7 @@ const upload = multer({
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Root endpoint - redirect to health check or serve info
-app.get('/', (req, res) => {
+app.get('/', (req: any, res: any) => {
   res.json({
     name: 'PNG2Vector API',
     version: '1.0.0',
@@ -78,7 +78,7 @@ app.get('/', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (req: any, res: any) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
@@ -124,7 +124,7 @@ app.post('/api/trace', upload.single('image'), async (req: any, res: any) => {
 });
 
 // Catch-all handler for SPA routing
-app.get('*', (req, res) => {
+app.get('*', (req: any, res: any) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
