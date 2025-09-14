@@ -30,30 +30,44 @@ WORKDIR /app
 # Copy manifests first (cache-friendly)
 COPY package*.json ./
 
-# --- Sanitize package.json: remove comments + trailing commas, then validate ---
-# Uses Node itself (no npm packages) to convert JSONC-like to strict JSON.
+# --- Convert JSONC/JS-style package.json -> strict JSON via JS evaluation ---
+# Wrap contents in parentheses and evaluate as an object literal.
+# This tolerates // comments, /* */ comments, single quotes, trailing commas, etc.
 RUN node - <<'JS'
 const fs = require('fs');
-function clean(jsonPath){
-  let s = fs.readFileSync(jsonPath, 'utf8');
-  // Remove BOM
-  s = s.replace(/^\uFEFF/, '');
-  // Remove block comments  /* ... */
-  s = s.replace(/\/\*[^]*?\*\//g, '');
-  // Remove line comments // ...  (not perfect, but good enough for JSONC)
-  s = s.replace(/^\s*\/\/.*$/mg, '');
-  // Remove trailing commas before } or ]
-  s = s.replace(/,\s*([}\]])/g, '$1');
-  // Trim
-  s = s.trim();
-  // Validate
-  JSON.parse(s);
-  fs.writeFileSync(jsonPath, s);
+const vm = require('vm');
+
+function toStrictJSON(path) {
+  if (!fs.existsSync(path)) return;
+  let src = fs.readFileSync(path, 'utf8');
+
+  // Remove BOM, normalize newlines
+  src = src.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+
+  // If file accidentally has `module.exports = {...}` or `export default {...}`,
+  // coerce it to a bare object literal.
+  src = src.replace(/^\s*module\.exports\s*=\s*/,'')
+           .replace(/^\s*export\s+default\s+/,'')
+           .trim();
+
+  // Ensure we evaluate a pure expression (object/array) by wrapping in ( )
+  const wrapped = '(' + src + ')';
+
+  let obj;
+  try {
+    obj = vm.runInNewContext(wrapped, {}, { timeout: 1000 });
+  } catch (e) {
+    console.error('Failed to interpret package.json as JS object literal:', e.message);
+    process.exit(1);
+  }
+
+  fs.writeFileSync(path, JSON.stringify(obj, null, 2));
 }
-if (fs.existsSync('package.json')) clean('package.json');
+
+toStrictJSON('package.json');
 JS
 
-# Install deps (uses cleaned package.json). Falls back if no lockfile.
+# Install deps (now using strict JSON). Falls back if no lockfile.
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy the rest and build (assumes `npm run build` -> ./dist)
@@ -76,7 +90,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 WORKDIR /app
 
-# Copy only what we need; no npm runs here (so JSON comments won’t matter)
+# Copy only what we need; no npm runs here
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
