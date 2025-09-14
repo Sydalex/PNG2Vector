@@ -19,15 +19,21 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files and lockfiles
+# Copy package files and clean them
 COPY package*.json ./
 COPY apps/server/package*.json ./apps/server/
 COPY apps/web/package*.json ./apps/web/
+
+# Clean package.json files by removing comments
+RUN sed -i '/^[[:space:]]*\/\//d' package.json 2>/dev/null || true
+RUN sed -i '/^[[:space:]]*\/\//d' apps/server/package.json 2>/dev/null || true
+RUN sed -i '/^[[:space:]]*\/\//d' apps/web/package.json 2>/dev/null || true
 
 # Create shared directory and copy package.json if it exists
 RUN mkdir -p ./shared
 RUN if [ -f "shared/package.json" ]; then \
         cp shared/package*.json ./shared/; \
+        sed -i '/^[[:space:]]*\/\//d' ./shared/package.json 2>/dev/null || true; \
     else \
         echo "No shared package.json found, skipping..."; \
     fi
