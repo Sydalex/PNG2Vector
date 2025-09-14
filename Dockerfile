@@ -75,7 +75,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # 3. Copy necessary artifacts from the 'builder' stage
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/dist ./apps/server/dist
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/dist ./apps/web/dist
+COPY --from=builder --chown=nodejs:nodejs /app/apps/web/dist ./apps/server/public
+COPY --from=builder --chown=nodejs:nodejs /app/shared ./shared
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/apps/server/package.json ./apps/server/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/web/package.json ./apps/web/

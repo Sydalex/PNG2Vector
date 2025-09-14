@@ -1,4 +1,6 @@
 // filename: apps/server/src/index.ts
+// Register path mappings for runtime
+import 'module-alias/register';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -156,6 +158,9 @@ app.listen(PORT, () => {
   console.log(`🚀 PNG2Vector server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🎯 API endpoint: http://localhost:${PORT}/api/trace`);
+  console.log(`📁 Serving static files from: ${path.join(__dirname, '../public')}`);
+  console.log(`📁 Current working directory: ${process.cwd()}`);
+  console.log(`📁 Server file location: ${__dirname}`);
 });
 
 export default app;
