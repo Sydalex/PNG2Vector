@@ -37,19 +37,22 @@ COPY package*.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
 
-# 3. Sanitize all package.json and package-lock.json files recursively
+# 3. Sanitize all package.json and package-lock.json files recursively (for npm install)
 RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
 
 # 4. Install all dependencies for the entire monorepo
 RUN npm install --workspaces --include-workspace-root
 
-# 5. Copy the rest of the source code
+# 5. Copy the rest of the source code (this overwrites the sanitized manifests)
 COPY . .
 
-# 6. Build both the 'server' and 'web' workspaces
+# 6. Sanitize the package.json files AGAIN (for npm run build)
+RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
+
+# 7. Build both the 'server' and 'web' workspaces
 RUN npm run build --workspaces
 
-# 7. Prune development-only dependencies
+# 8. Prune development-only dependencies
 RUN npm prune --production --workspaces --include-workspace-root
 
 
