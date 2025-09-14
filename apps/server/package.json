@@ -21,7 +21,7 @@
     "onnxruntime-node": "^1.17.1",
     "simplify-js": "^1.2.4",
     "martinez-polygon-clipping": "^0.7.2",
-    "dxf-writer": "^2.0.1"
+    "dxf-writer": "^1.18.4"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
