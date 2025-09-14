@@ -19,7 +19,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and lockfiles
 COPY package*.json ./
 COPY apps/server/package*.json ./apps/server/
 COPY apps/web/package*.json ./apps/web/
@@ -32,19 +32,31 @@ RUN if [ -f "shared/package.json" ]; then \
         echo "No shared package.json found, skipping..."; \
     fi
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies - use npm install if no lockfile exists
+RUN if [ -f "package-lock.json" ]; then \
+        npm ci --omit=dev; \
+    else \
+        npm install --only=production; \
+    fi
 
 # Development stage
 FROM base AS development
-RUN npm ci
+RUN if [ -f "package-lock.json" ]; then \
+        npm ci; \
+    else \
+        npm install; \
+    fi
 COPY . .
 EXPOSE 3000 5173
 CMD ["npm", "run", "dev"]
 
 # Build stage
 FROM base AS build
-RUN npm ci
+RUN if [ -f "package-lock.json" ]; then \
+        npm ci; \
+    else \
+        npm install; \
+    fi
 COPY . .
 RUN npm run build
 
