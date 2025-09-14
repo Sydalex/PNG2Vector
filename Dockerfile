@@ -56,6 +56,11 @@ RUN find . -name "package.json" -type f
 RUN echo "Building server workspace:"
 RUN echo "Server tsconfig:"
 RUN cat apps/server/tsconfig.json || echo "No tsconfig found"
+# Try building just the minimal server first
+RUN echo "Testing minimal TypeScript compilation:"
+RUN cd apps/server && npx tsc src/minimal-server.ts --outDir dist --target ES2022 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --moduleResolution node || echo "Minimal compilation failed"
+RUN ls -la apps/server/dist/ || echo "No dist created"
+RUN echo "Now trying full server build:"
 RUN npm run build --workspace=apps/server 2>&1 || (echo "❌ Server build failed!" && echo "Checking TypeScript installation:" && npx tsc --version && exit 1)
 RUN echo "Building web workspace:"
 RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
@@ -63,8 +68,12 @@ RUN echo "Build completed. Checking dist directories:"
 RUN ls -la apps/server/ || echo "apps/server not found"
 RUN ls -la apps/server/dist/ || echo "apps/server/dist not found"
 RUN ls -la apps/web/dist/ || echo "apps/web/dist not found"
-RUN echo "Checking if index.js exists:"
-RUN test -f apps/server/dist/index.js && echo "✅ index.js found" || (echo "❌ index.js NOT found" && find . -name "*.js" -type f)
+RUN echo "Checking build results:"
+RUN ls -la apps/server/dist/ || echo "No dist directory"
+RUN test -f apps/server/dist/index.js && echo "✅ index.js found" || echo "❌ index.js NOT found"
+RUN test -f apps/server/dist/minimal-server.js && echo "✅ minimal-server.js found" || echo "❌ minimal-server.js NOT found"
+RUN echo "All .js files in project:"
+RUN find . -name "*.js" -type f | head -10
 
 # 8. Prune development-only dependencies
 RUN npm prune --production --workspaces --include-workspace-root
@@ -106,4 +115,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:8080/api/health || curl --fail http://localhost:8080/ || exit 1
 
 # 7. Define the command to start the server
-CMD ["node", "apps/server/dist/index.js"]
+# Try main server first, fallback to minimal server
+CMD ["sh", "-c", "if [ -f apps/server/dist/index.js ]; then echo 'Starting main server'; node apps/server/dist/index.js; elif [ -f apps/server/dist/minimal-server.js ]; then echo 'Starting minimal server'; node apps/server/dist/minimal-server.js; else echo 'No server files found'; ls -la apps/server/dist/; exit 1; fi"]
