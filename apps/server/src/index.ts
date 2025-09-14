@@ -45,6 +45,20 @@ const upload = multer({
 // Serve static files (built frontend)
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Root endpoint - redirect to health check or serve info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'PNG2Vector API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      trace: 'POST /api/trace'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });

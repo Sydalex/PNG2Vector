@@ -53,9 +53,6 @@ RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp
 RUN echo "Starting build process..."
 RUN echo "Current directory structure:"
 RUN find . -name "package.json" -type f
-RUN echo "Testing minimal TypeScript compilation:"
-RUN cd apps/server && npx tsc src/minimal.ts --outDir dist --target ES2022 --module commonjs --esModuleInterop --allowSyntheticDefaultImports || echo "Minimal TS compilation failed"
-RUN ls -la apps/server/dist/ || echo "No dist directory after minimal compile"
 RUN echo "Building server workspace:"
 RUN npm run build --workspace=apps/server || (echo "Server build failed!" && exit 1)
 RUN echo "Building web workspace:"
@@ -107,4 +104,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:8080/api/health || curl --fail http://localhost:8080/ || exit 1
 
 # 7. Define the command to start the server
-CMD ["sh", "-c", "if [ -f apps/server/dist/minimal.js ]; then node apps/server/dist/minimal.js; else node apps/server/dist/index.js; fi"]
+CMD ["node", "apps/server/dist/index.js"]
