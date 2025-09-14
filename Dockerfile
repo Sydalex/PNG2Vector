@@ -84,11 +84,11 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/web/package.json ./apps/web/
 USER nodejs
 
 # 5. Expose the port the app will listen on.
-EXPOSE 3000
+EXPOSE 8080
 
 # 6. Add a healthcheck for Railway to monitor the application's health
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl --fail http://localhost:3000/api/health || curl --fail http://localhost:3000/ || exit 1
+  CMD curl --fail http://localhost:8080/api/health || curl --fail http://localhost:8080/ || exit 1
 
 # 7. Define the command to start the server
 CMD ["node", "apps/server/dist/index.js"]

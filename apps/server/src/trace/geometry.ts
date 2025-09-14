@@ -2,6 +2,7 @@
 import * as martinez from 'martinez-polygon-clipping';
 import type { Point, Polygon } from '@shared/types';
 
+
 /**
  * Geometry validation and cleanup utilities
  * Ensures CAD-safe output with proper topology
@@ -183,10 +184,10 @@ function fixSelfIntersections(polygon: Polygon): Polygon | null {
     const holeCoords = polygon.holes.map(hole => hole.map(p => [p.x, p.y]));
     
     // Create polygon in Martinez format
-    const martinezPolygon: martinez.Polygon = [exteriorCoords, ...holeCoords];
+    const martinezPolygon = [exteriorCoords, ...holeCoords];
     
     // Use union operation with empty polygon to fix self-intersections
-    const fixed = martinez.union([martinezPolygon], []);
+    const fixed: any = (martinez as any).union([martinezPolygon], []);
     
     if (!fixed || fixed.length === 0) {
       return null;
@@ -198,11 +199,22 @@ function fixSelfIntersections(polygon: Polygon): Polygon | null {
       return null;
     }
     
-    // Convert back to our format
-    const fixedExterior = (firstPolygon[0] as number[][]).map(([x, y]) => ({ x, y }));
-    const fixedHoles = firstPolygon.slice(1).map((hole: number[][]) => 
-      hole.map(([x, y]) => ({ x, y }))
-    );
+    // Convert back to our format with complete type safety
+    const rawExterior = firstPolygon[0];
+    const rawHoles = firstPolygon.slice(1);
+    
+    const fixedExterior = Array.isArray(rawExterior) ? rawExterior.map((coord: any) => ({
+      x: typeof coord[0] === 'number' ? coord[0] : 0,
+      y: typeof coord[1] === 'number' ? coord[1] : 0
+    })) : [];
+    
+    const fixedHoles = Array.isArray(rawHoles) ? rawHoles.map((hole: any) => {
+      if (!Array.isArray(hole)) return [];
+      return hole.map((coord: any) => ({
+        x: typeof coord[0] === 'number' ? coord[0] : 0,
+        y: typeof coord[1] === 'number' ? coord[1] : 0
+      }));
+    }) : [];
     
     return {
       exterior: fixedExterior,
