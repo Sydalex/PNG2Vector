@@ -29,18 +29,23 @@ RUN sed -i '/^[[:space:]]*\/\//d' package.json 2>/dev/null || true
 RUN sed -i '/^[[:space:]]*\/\//d' apps/server/package.json 2>/dev/null || true
 RUN sed -i '/^[[:space:]]*\/\//d' apps/web/package.json 2>/dev/null || true
 
+# Fix dxf-writer version issue
+RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' package.json 2>/dev/null || true
+RUN sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' apps/server/package.json 2>/dev/null || true
+
 # Create shared directory and copy package.json if it exists
 RUN mkdir -p ./shared
 RUN if [ -f "shared/package.json" ]; then \
         cp shared/package*.json ./shared/; \
         sed -i '/^[[:space:]]*\/\//d' ./shared/package.json 2>/dev/null || true; \
+        sed -i 's/"dxf-writer": "\^2\.0\.1"/"dxf-writer": "^1.0.0"/g' ./shared/package.json 2>/dev/null || true; \
     else \
         echo "No shared package.json found, skipping..."; \
     fi
 
-# Install dependencies - use npm install if no lockfile exists
+# Install dependencies with fallback
 RUN if [ -f "package-lock.json" ]; then \
-        npm ci --omit=dev; \
+        npm ci --omit=dev || npm install --only=production; \
     else \
         npm install --only=production; \
     fi
@@ -48,7 +53,7 @@ RUN if [ -f "package-lock.json" ]; then \
 # Development stage
 FROM base AS development
 RUN if [ -f "package-lock.json" ]; then \
-        npm ci; \
+        npm ci || npm install; \
     else \
         npm install; \
     fi
@@ -59,7 +64,7 @@ CMD ["npm", "run", "dev"]
 # Build stage
 FROM base AS build
 RUN if [ -f "package-lock.json" ]; then \
-        npm ci; \
+        npm ci || npm install; \
     else \
         npm install; \
     fi
