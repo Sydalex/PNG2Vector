@@ -19,11 +19,11 @@ echo -e "\n4. Testing TypeScript compilation..."
 echo "Running: npx tsc --listFiles --listEmittedFiles"
 
 # Run in Docker to simulate build environment
-docker run --rm -v "$(pwd)/../..:/app" -w /app/apps/server node:20-slim bash -c "
+docker run --rm -v "$(pwd)/../..:/app" -w /app/apps/server node:20-slim bash -c '
   npm install -g typescript
   tsc --listFiles --listEmittedFiles
-  echo 'Files in dist after compilation:'
-  find dist -type f 2>/dev/null || echo 'No dist directory created'
-"
+  echo "Files in dist after compilation:"
+  find dist -type f 2>/dev/null || echo "No dist directory created"
+'
 
 echo -e "\n=== Test Complete ==="

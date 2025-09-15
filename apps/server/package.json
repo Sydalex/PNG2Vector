@@ -1,4 +1,3 @@
-// filename: apps/server/package.json
 {
   "name": "@png2vector/server",
   "version": "1.0.0",

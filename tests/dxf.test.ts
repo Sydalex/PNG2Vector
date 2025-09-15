@@ -1,4 +1,3 @@
-// filename: tests/dxf.test.ts
 import { generateDXF, generateMinimalDXF, validateDXFOutput } from '../apps/server/src/trace/dxf';
 import type { Polygon } from '../shared/types';
 

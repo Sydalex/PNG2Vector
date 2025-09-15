@@ -1,4 +1,3 @@
-// filename: tests/geometry.test.ts
 import { validateGeometry, cleanupGeometry, isValidPolygon } from '../apps/server/src/trace/geometry';
 import type { Polygon, Point } from '../shared/types';
 

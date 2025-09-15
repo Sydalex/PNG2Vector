@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/contour.ts
 import simplify from 'simplify-js';
 import type { ImageData, Point, ContourHierarchy } from '../../../../shared/types';
 

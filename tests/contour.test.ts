@@ -1,4 +1,3 @@
-// filename: tests/contour.test.ts
 import { extractContours, simplifyContours, calculatePolygonArea, ensureWindingOrder } from '../apps/server/src/trace/contour';
 import type { ImageData, Point } from '../shared/types';
 
