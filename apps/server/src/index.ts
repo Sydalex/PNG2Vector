@@ -1,6 +1,4 @@
-// filename: apps/server/src/index.ts
-// Clean minimal server for compilation testing
-const express = require('express');
+import express from 'express';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -25,4 +23,4 @@ app.listen(PORT, () => {
   console.log(`🚀 PNG2Vector server running on port ${PORT}`);
 });
 
-export default app;
+module.exports = app;

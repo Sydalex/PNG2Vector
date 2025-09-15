@@ -1,0 +1,38 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install TypeScript globally
+RUN npm install -g typescript
+
+# Copy only what we need for the server build test
+COPY apps/server/package.json ./apps/server/
+COPY apps/server/tsconfig.json ./apps/server/
+COPY apps/server/src ./apps/server/src
+
+# Debug the issue step by step
+RUN echo "=== TYPESCRIPT BUILD DEBUG ==="
+
+RUN echo "1. Checking server directory structure:"
+RUN find apps/server -type f
+
+RUN echo -e "\n2. Checking tsconfig.json:"
+RUN cat apps/server/tsconfig.json
+
+RUN echo -e "\n3. Checking source files:"
+RUN find apps/server/src -name "*.ts" -type f
+
+RUN echo -e "\n4. Testing direct tsc compilation:"
+RUN cd apps/server && tsc --version
+
+RUN echo -e "\n5. Running TypeScript compilation with verbose output:"
+RUN cd apps/server && tsc --listFiles --listEmittedFiles
+
+RUN echo -e "\n6. Checking dist directory after compilation:"
+RUN find apps/server -type f -name "*.js" || echo "No JS files found"
+
+RUN echo -e "\n7. Full directory listing:"
+RUN ls -la apps/server/
+RUN ls -la apps/server/dist/ || echo "No dist directory"
+
+CMD ["echo", "Build test complete"]

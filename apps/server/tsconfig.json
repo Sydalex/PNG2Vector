@@ -1,20 +1,23 @@
-// filename: apps/server/tsconfig.json
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "module": "commonjs",
     "target": "ES2022",
     "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "resolveJsonModule": true,
     "types": ["node"],
-    "baseUrl": "."
+    "noImplicitAny": false
   },
   "include": [
-    "src/**/*"
-  ],
-  "typeRoots": [
-    "./src/types",
-    "./node_modules/@types"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

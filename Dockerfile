@@ -61,12 +61,21 @@ RUN echo "Testing minimal TypeScript compilation:"
 RUN cd apps/server && npx tsc src/minimal-server.ts --outDir dist --target ES2022 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --moduleResolution node || echo "Minimal compilation failed"
 RUN ls -la apps/server/dist/ || echo "No dist created"
 RUN echo "Now trying full server build:"
-RUN echo "Checking source files before build:"
+RUN echo "=== COMPREHENSIVE TYPESCRIPT DEBUGGING ==="
+RUN echo "Checking source files:"
 RUN ls -la apps/server/src/
-RUN echo "Running TypeScript compilation with verbose output:"
-RUN cd apps/server && npx tsc --listFiles --listEmittedFiles || echo "Direct tsc failed"
-RUN echo "Running via npm script:"
-RUN npm run build --workspace=apps/server --verbose 2>&1 || (echo "❌ Server build failed!" && echo "Checking TypeScript installation:" && npx tsc --version && exit 1)
+RUN echo "Testing absolute simplest TypeScript compilation:"
+RUN cd apps/server && npx tsc src/simple.ts --outDir dist --target ES2022 --module commonjs
+RUN echo "Checking if simple.js was created:"
+RUN ls -la apps/server/dist/ || echo "No dist after simple compile"
+RUN echo "Testing main index.ts compilation:"
+RUN cd apps/server && npx tsc src/index.ts --outDir dist --target ES2022 --module commonjs
+RUN echo "Checking if index.js was created:"
+RUN ls -la apps/server/dist/ || echo "No dist after index compile"
+RUN echo "Running full npm build with maximum verbosity:"
+RUN cd apps/server && npm run build -- --verbose --listFiles --listEmittedFiles 2>&1 || echo "NPM build failed"
+RUN echo "Final check of dist directory:"
+RUN find apps/server -name "*.js" -type f || echo "No JS files found anywhere"
 RUN echo "Building web workspace:"
 RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
 RUN echo "Build completed. Checking dist directories:"
@@ -120,5 +129,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:8080/api/health || curl --fail http://localhost:8080/ || exit 1
 
 # 7. Define the command to start the server
-# Try main server first, fallback to minimal server
-CMD ["sh", "-c", "if [ -f apps/server/dist/index.js ]; then echo 'Starting main server'; node apps/server/dist/index.js; elif [ -f apps/server/dist/minimal-server.js ]; then echo 'Starting minimal server'; node apps/server/dist/minimal-server.js; else echo 'No server files found'; ls -la apps/server/dist/; exit 1; fi"]
+# Try main server, fallback to simpler versions
+CMD ["sh", "-c", "echo 'Checking for server files...'; if [ -f apps/server/dist/index.js ]; then echo 'Starting main server'; node apps/server/dist/index.js; elif [ -f apps/server/dist/simple.js ]; then echo 'Starting simple test server'; node apps/server/dist/simple.js; else echo 'No server files found'; ls -la apps/server/dist/; find apps/server -name '*.js' -type f || echo 'No JS files anywhere'; exit 1; fi"]
