@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/hed.ts
 import * as ort from 'onnxruntime-node';
 import path from 'path';
 import fs from 'fs';

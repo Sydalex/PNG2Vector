@@ -37,7 +37,6 @@ exports.validateGeometry = validateGeometry;
 exports.cleanupGeometry = cleanupGeometry;
 exports.calculateSignedArea = calculateSignedArea;
 exports.isValidPolygon = isValidPolygon;
-// filename: apps/server/src/trace/geometry.ts
 const martinez = __importStar(require("martinez-polygon-clipping"));
 /**
  * Geometry validation and cleanup utilities

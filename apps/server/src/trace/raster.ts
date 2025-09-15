@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/raster.ts
 import type { ImageData } from '../../../../shared/types';
 
 /**

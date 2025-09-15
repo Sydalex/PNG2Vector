@@ -1,1 +1,1 @@
-{"version":3,"file":"hed.d.ts","sourceRoot":"","sources":["../../../../../src/trace/hed.ts"],"names":[],"mappings":"AAIA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,0BAA0B,CAAC;AAqC1D;;;GAGG;AACH,wBAAsB,cAAc,CAAC,SAAS,EAAE,SAAS,GAAG,OAAO,CAAC,SAAS,CAAC,CAgC7E"}
+{"version":3,"file":"hed.d.ts","sourceRoot":"","sources":["../../../../../src/trace/hed.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,0BAA0B,CAAC;AAqC1D;;;GAGG;AACH,wBAAsB,cAAc,CAAC,SAAS,EAAE,SAAS,GAAG,OAAO,CAAC,SAAS,CAAC,CAgC7E"}

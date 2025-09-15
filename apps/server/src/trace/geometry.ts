@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/geometry.ts
 import * as martinez from 'martinez-polygon-clipping';
 import type { Point, Polygon } from '../../../../shared/types';
 

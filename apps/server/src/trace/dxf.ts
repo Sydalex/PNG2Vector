@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/dxf.ts
 import type { Polygon, Point } from '../../../../shared/types';
 
 /**

@@ -1,7 +1,6 @@
-// filename: apps/web/src/App.tsx
 import React, { useState, useCallback, useRef } from 'react';
 import { useDebouncedCallback } from './lib/debounce';
-import type { TraceRequest, TraceResponse, ErrorResponse } from '@shared/types';
+import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
 
 interface AppState {
   selectedFile: File | null;

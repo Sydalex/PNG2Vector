@@ -1,5 +1,4 @@
 "use strict";
-// filename: shared/types.ts
 /**
  * Shared TypeScript types for PNG to SVG/DXF conversion API
  */
