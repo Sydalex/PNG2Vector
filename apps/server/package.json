@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc --rootDir ../.. --outDir dist --skipLibCheck",
     "start": "node dist/index.js",
     "test": "jest",
     "lint": "eslint src --ext .ts"

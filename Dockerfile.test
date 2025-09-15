@@ -2,13 +2,21 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install TypeScript globally
-RUN npm install -g typescript
+# Install TypeScript globally and JSON comment stripper
+RUN npm install -g typescript strip-json-comments-cli
 
 # Copy only what we need for the server build test
 COPY apps/server/package.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 COPY apps/server/src ./apps/server/src
+# Copy shared types (needed for compilation)
+COPY shared ./shared
+
+# Strip JSON comments from package.json (same as main Dockerfile)
+RUN strip-json-comments apps/server/package.json > apps/server/package.json.tmp && mv apps/server/package.json.tmp apps/server/package.json
+
+# Install dependencies including @types/node
+RUN cd apps/server && npm install
 
 # Debug the issue step by step
 RUN echo "=== TYPESCRIPT BUILD DEBUG ==="
@@ -26,7 +34,7 @@ RUN echo -e "\n4. Testing direct tsc compilation:"
 RUN cd apps/server && tsc --version
 
 RUN echo -e "\n5. Running TypeScript compilation with verbose output:"
-RUN cd apps/server && tsc --listFiles --listEmittedFiles
+RUN tsc --listFiles --listEmittedFiles --rootDir . --outDir build --skipLibCheck --project apps/server/tsconfig.json
 
 RUN echo -e "\n6. Checking dist directory after compilation:"
 RUN find apps/server -type f -name "*.js" || echo "No JS files found"

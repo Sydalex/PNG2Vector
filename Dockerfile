@@ -51,43 +51,14 @@ RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp
 
 # 7. Build both the 'server' and 'web' workspaces
 RUN echo "Starting build process..."
-RUN echo "Current directory structure:"
-RUN find . -name "package.json" -type f
-RUN echo "Building server workspace:"
-RUN echo "Server tsconfig:"
-RUN cat apps/server/tsconfig.json || echo "No tsconfig found"
-# Try building just the minimal server first
-RUN echo "Testing minimal TypeScript compilation:"
-RUN cd apps/server && npx tsc src/minimal-server.ts --outDir dist --target ES2022 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --moduleResolution node || echo "Minimal compilation failed"
-RUN ls -la apps/server/dist/ || echo "No dist created"
-RUN echo "Now trying full server build:"
-RUN echo "=== COMPREHENSIVE TYPESCRIPT DEBUGGING ==="
-RUN echo "Checking source files:"
-RUN ls -la apps/server/src/
-RUN echo "Testing absolute simplest TypeScript compilation:"
-RUN cd apps/server && npx tsc src/simple.ts --outDir dist --target ES2022 --module commonjs
-RUN echo "Checking if simple.js was created:"
-RUN ls -la apps/server/dist/ || echo "No dist after simple compile"
-RUN echo "Testing main index.ts compilation:"
-RUN cd apps/server && npx tsc src/index.ts --outDir dist --target ES2022 --module commonjs
-RUN echo "Checking if index.js was created:"
-RUN ls -la apps/server/dist/ || echo "No dist after index compile"
-RUN echo "Running full npm build with maximum verbosity:"
-RUN cd apps/server && npm run build -- --verbose --listFiles --listEmittedFiles 2>&1 || echo "NPM build failed"
-RUN echo "Final check of dist directory:"
-RUN find apps/server -name "*.js" -type f || echo "No JS files found anywhere"
+RUN echo "Building server workspace using proper TypeScript project config:"
+RUN npm run build --workspace=apps/server || (echo "Server build failed!" && exit 1)
 RUN echo "Building web workspace:"
 RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
 RUN echo "Build completed. Checking dist directories:"
-RUN ls -la apps/server/ || echo "apps/server not found"
 RUN ls -la apps/server/dist/ || echo "apps/server/dist not found"
 RUN ls -la apps/web/dist/ || echo "apps/web/dist not found"
-RUN echo "Checking build results:"
-RUN ls -la apps/server/dist/ || echo "No dist directory"
 RUN test -f apps/server/dist/index.js && echo "✅ index.js found" || echo "❌ index.js NOT found"
-RUN test -f apps/server/dist/minimal-server.js && echo "✅ minimal-server.js found" || echo "❌ minimal-server.js NOT found"
-RUN echo "All .js files in project:"
-RUN find . -name "*.js" -type f | head -10
 
 # 8. Prune development-only dependencies
 RUN npm prune --production --workspaces --include-workspace-root
@@ -130,4 +101,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 
 # 7. Define the command to start the server
 # Try main server, fallback to simpler versions
-CMD ["sh", "-c", "echo 'Checking for server files...'; if [ -f apps/server/dist/index.js ]; then echo 'Starting main server'; node apps/server/dist/index.js; elif [ -f apps/server/dist/simple.js ]; then echo 'Starting simple test server'; node apps/server/dist/simple.js; else echo 'No server files found'; ls -la apps/server/dist/; find apps/server -name '*.js' -type f || echo 'No JS files anywhere'; exit 1; fi"]
+CMD ["sh", "-c", "echo 'Checking for server files...'; if [ -f apps/server/dist/apps/server/src/index.js ]; then echo 'Starting main server'; node apps/server/dist/apps/server/src/index.js; elif [ -f apps/server/dist/apps/server/src/simple.js ]; then echo 'Starting simple test server'; node apps/server/dist/apps/server/src/simple.js; else echo 'No server files found'; ls -la apps/server/dist/; find apps/server -name '*.js' -type f || echo 'No JS files anywhere'; exit 1; fi"]
