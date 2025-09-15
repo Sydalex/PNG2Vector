@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { useDebouncedCallback } from './lib/debounce';
 import type { TraceRequest, TraceResponse, ErrorResponse } from '../../../shared/types';
+import './App.css';
 
 interface AppState {
   selectedFile: File | null;
@@ -201,18 +202,17 @@ const App: React.FC = () => {
   }, [state.result, state.selectedFile]);
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>PNG2Vector</h1>
-        <p style={styles.subtitle}>AI-Assisted PNG to SVG/DXF Converter</p>
-      </header>
+    <div className="app">
+      <div className="header">
+        <h1>PNG2Vector</h1>
+        <p>AI-Assisted CAD Vectorizer for Vectorworks & ArchiCAD</p>
+      </div>
 
-      <main style={styles.main}>
-        {/* File Upload Section */}
-        <section style={styles.uploadSection}>
+      <div className="main-content">
+        <div className="upload-section">
           <div
             ref={dropZoneRef}
-            style={styles.dropZone}
+            className="drop-zone"
             onDragOver={handleDragOver}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
@@ -220,44 +220,32 @@ const App: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
             role="button"
             tabIndex={0}
-            aria-label="Upload PNG file"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                fileInputRef.current?.click();
-              }
-            }}
+            aria-label="Click to select PNG file or drag and drop"
           >
             <input
               ref={fileInputRef}
               type="file"
+              className="file-input"
               accept="image/png"
               onChange={handleFileInputChange}
-              style={styles.hiddenInput}
-              aria-label="Select PNG file"
+              aria-label="PNG file input"
             />
-            
             {state.selectedFile ? (
-              <div style={styles.fileInfo}>
-                <div style={styles.fileName}>{state.selectedFile.name}</div>
-                <div style={styles.fileSize}>
-                  {(state.selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </div>
+              <div>
+                <p><strong>{state.selectedFile.name}</strong></p>
+                <p>Click to select a different file</p>
               </div>
             ) : (
-              <div style={styles.uploadPrompt}>
-                <div style={styles.uploadIcon}>📁</div>
-                <div>Drop PNG file here or click to select</div>
-                <div style={styles.uploadHint}>Maximum file size: 50MB</div>
+              <div>
+                <p>Drag & drop a PNG file here</p>
+                <p>or click to select</p>
               </div>
             )}
           </div>
-        </section>
 
-        {/* Controls Section */}
-        {state.selectedFile && (
-          <section style={styles.controlsSection}>
-            <div style={styles.controlGroup}>
-              <label htmlFor="fidelity-slider" style={styles.label}>
+          <div className="controls">
+            <div className="control-group">
+              <label htmlFor="fidelity-slider">
                 Fidelity: {state.fidelity}%
               </label>
               <input
@@ -267,362 +255,111 @@ const App: React.FC = () => {
                 max="100"
                 value={state.fidelity}
                 onChange={handleFidelityChange}
-                style={styles.slider}
-                aria-describedby="fidelity-description"
+                className="slider"
+                aria-label="Fidelity level from 0 to 100 percent"
               />
-              <div id="fidelity-description" style={styles.description}>
-                Higher values preserve more detail but increase file size
-              </div>
+              <small>Higher values preserve more detail but increase file size</small>
             </div>
 
-            <div style={styles.controlGroup}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={state.whiteFill}
-                  onChange={handleWhiteFillChange}
-                  style={styles.checkbox}
-                />
-                White Fill
-              </label>
-              <div style={styles.description}>
-                Add white fill to shapes (VW_CLASS_Fill layer)
-              </div>
+            <div className="checkbox-group">
+              <input
+                id="white-fill-checkbox"
+                type="checkbox"
+                checked={state.whiteFill}
+                onChange={handleWhiteFillChange}
+                className="checkbox"
+                aria-label="Enable white fill for shapes"
+              />
+              <label htmlFor="white-fill-checkbox">White Fill</label>
             </div>
 
-            <div style={styles.controlGroup}>
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={state.useAI}
-                  onChange={handleUseAIChange}
-                  style={styles.checkbox}
-                />
-                AI Preprocessing
-              </label>
-              <div style={styles.description}>
-                Use AI edge detection for cleaner results (requires ONNX models)
-              </div>
+            <div className="checkbox-group">
+              <input
+                id="use-ai-checkbox"
+                type="checkbox"
+                checked={state.useAI}
+                onChange={handleUseAIChange}
+                className="checkbox"
+                aria-label="Enable AI-assisted preprocessing"
+              />
+              <label htmlFor="use-ai-checkbox">AI Enhancement</label>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* Results Section */}
-        {(state.svgPreview || state.isProcessing || state.error) && (
-          <section style={styles.resultsSection}>
-            <div style={styles.resultsGrid}>
-              {/* SVG Preview */}
-              <div style={styles.previewPanel}>
-                <h3 style={styles.panelTitle}>SVG Preview</h3>
-                <div style={styles.previewContainer}>
-                  {state.isProcessing ? (
-                    <div style={styles.loading}>
-                      <div style={styles.spinner}></div>
-                      <div>Processing...</div>
-                    </div>
-                  ) : state.error ? (
-                    <div style={styles.error}>
-                      <div style={styles.errorIcon}>⚠️</div>
-                      <div>{state.error}</div>
-                    </div>
-                  ) : state.svgPreview ? (
-                    <div
-                      style={styles.svgContainer}
-                      dangerouslySetInnerHTML={{ __html: state.svgPreview }}
-                    />
-                  ) : null}
+          {state.error && (
+            <div className="error" role="alert">
+              {state.error}
+            </div>
+          )}
+        </div>
+
+        <div className="preview-section">
+          <h3>Preview</h3>
+          
+          <div className="preview-container">
+            {state.isProcessing ? (
+              <div className="processing">
+                <p>Processing...</p>
+              </div>
+            ) : state.svgPreview ? (
+              <div
+                dangerouslySetInnerHTML={{ __html: state.svgPreview }}
+                className="preview-svg"
+              />
+            ) : (
+              <div className="processing">
+                <p>Select a PNG file to see preview</p>
+              </div>
+            )}
+          </div>
+
+          <div className="download-buttons">
+            <button
+              className="btn btn-primary"
+              onClick={handleDownloadSVG}
+              disabled={!state.result || state.isProcessing}
+              aria-label="Download SVG file"
+            >
+              Download SVG
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={handleDownloadDXF}
+              disabled={!state.result || state.isProcessing}
+              aria-label="Download DXF file"
+            >
+              Download DXF
+            </button>
+          </div>
+
+          {state.result && (
+            <div className="metrics">
+              <h4>Processing Metrics</h4>
+              <div className="metrics-grid">
+                <div className="metric">
+                  <span>Polygons:</span>
+                  <span>{state.result.metrics.polygonCount}</span>
+                </div>
+                <div className="metric">
+                  <span>Nodes:</span>
+                  <span>{state.result.metrics.nodeCount}</span>
+                </div>
+                <div className="metric">
+                  <span>Simplification:</span>
+                  <span>{state.result.metrics.simplification.toFixed(2)}</span>
+                </div>
+                <div className="metric">
+                  <span>Total Time:</span>
+                  <span>{state.result.metrics.timings.total}ms</span>
                 </div>
               </div>
-
-              {/* Metrics and Downloads */}
-              {state.result && (
-                <div style={styles.metricsPanel}>
-                  <h3 style={styles.panelTitle}>Results</h3>
-                  
-                  <div style={styles.metrics}>
-                    <div style={styles.metric}>
-                      <span style={styles.metricLabel}>Polygons:</span>
-                      <span style={styles.metricValue}>{state.result.metrics.polygonCount}</span>
-                    </div>
-                    <div style={styles.metric}>
-                      <span style={styles.metricLabel}>Nodes:</span>
-                      <span style={styles.metricValue}>{state.result.metrics.nodeCount}</span>
-                    </div>
-                    <div style={styles.metric}>
-                      <span style={styles.metricLabel}>Processing:</span>
-                      <span style={styles.metricValue}>{state.result.metrics.timings.total}ms</span>
-                    </div>
-                  </div>
-
-                  <div style={styles.downloadButtons}>
-                    <button
-                      onClick={handleDownloadSVG}
-                      style={styles.downloadButton}
-                      aria-label="Download SVG file"
-                    >
-                      📄 Download SVG
-                    </button>
-                    <button
-                      onClick={handleDownloadDXF}
-                      style={styles.downloadButton}
-                      aria-label="Download DXF file"
-                    >
-                      📐 Download DXF
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
-          </section>
-        )}
-      </main>
-
-      <footer style={styles.footer}>
-        <p>
-          Compatible with VectorWorks, ArchiCAD, and other CAD applications.
-          Uses deterministic vectorization with optional AI preprocessing.
-        </p>
-      </footer>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-// Styles object
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    backgroundColor: '#f8fafc',
-  },
-  header: {
-    textAlign: 'center' as const,
-    padding: '2rem 1rem',
-    backgroundColor: 'white',
-    borderBottom: '1px solid #e2e8f0',
-  },
-  title: {
-    fontSize: '2.5rem',
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: '0.5rem',
-  },
-  subtitle: {
-    fontSize: '1.125rem',
-    color: '#64748b',
-  },
-  main: {
-    flex: 1,
-    padding: '2rem 1rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    width: '100%',
-  },
-  uploadSection: {
-    marginBottom: '2rem',
-  },
-  dropZone: {
-    border: '2px dashed #cbd5e1',
-    borderRadius: '0.5rem',
-    padding: '3rem 2rem',
-    textAlign: 'center' as const,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    backgroundColor: 'white',
-  },
-  hiddenInput: {
-    display: 'none',
-  },
-  fileInfo: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: '0.5rem',
-  },
-  fileName: {
-    fontSize: '1.125rem',
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  fileSize: {
-    fontSize: '0.875rem',
-    color: '#64748b',
-  },
-  uploadPrompt: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: '1rem',
-    color: '#64748b',
-  },
-  uploadIcon: {
-    fontSize: '3rem',
-  },
-  uploadHint: {
-    fontSize: '0.875rem',
-    color: '#94a3b8',
-  },
-  controlsSection: {
-    backgroundColor: 'white',
-    padding: '1.5rem',
-    borderRadius: '0.5rem',
-    marginBottom: '2rem',
-    border: '1px solid #e2e8f0',
-  },
-  controlGroup: {
-    marginBottom: '1.5rem',
-  },
-  label: {
-    display: 'block',
-    fontSize: '1rem',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '0.5rem',
-  },
-  slider: {
-    width: '100%',
-    height: '0.5rem',
-    borderRadius: '0.25rem',
-    background: '#e2e8f0',
-    outline: 'none',
-    marginBottom: '0.5rem',
-  },
-  checkboxLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '1rem',
-    fontWeight: '600',
-    color: '#374151',
-    cursor: 'pointer',
-    marginBottom: '0.5rem',
-  },
-  checkbox: {
-    width: '1rem',
-    height: '1rem',
-  },
-  description: {
-    fontSize: '0.875rem',
-    color: '#64748b',
-  },
-  resultsSection: {
-    marginBottom: '2rem',
-  },
-  resultsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '2rem',
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr',
-    },
-  },
-  previewPanel: {
-    backgroundColor: 'white',
-    padding: '1.5rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e2e8f0',
-  },
-  panelTitle: {
-    fontSize: '1.25rem',
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: '1rem',
-  },
-  previewContainer: {
-    minHeight: '300px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.25rem',
-    backgroundColor: '#f8fafc',
-  },
-  loading: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: '1rem',
-    color: '#64748b',
-  },
-  spinner: {
-    width: '2rem',
-    height: '2rem',
-    border: '2px solid #e2e8f0',
-    borderTop: '2px solid #3b82f6',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  },
-  error: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: '0.5rem',
-    color: '#dc2626',
-    textAlign: 'center' as const,
-  },
-  errorIcon: {
-    fontSize: '2rem',
-  },
-  svgContainer: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metricsPanel: {
-    backgroundColor: 'white',
-    padding: '1.5rem',
-    borderRadius: '0.5rem',
-    border: '1px solid #e2e8f0',
-    height: 'fit-content',
-  },
-  metrics: {
-    marginBottom: '1.5rem',
-  },
-  metric: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 0',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  metricLabel: {
-    color: '#64748b',
-    fontSize: '0.875rem',
-  },
-  metricValue: {
-    color: '#1e293b',
-    fontWeight: '600',
-  },
-  downloadButtons: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.75rem',
-  },
-  downloadButton: {
-    padding: '0.75rem 1rem',
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
-  },
-  footer: {
-    textAlign: 'center' as const,
-    padding: '2rem 1rem',
-    backgroundColor: 'white',
-    borderTop: '1px solid #e2e8f0',
-    color: '#64748b',
-    fontSize: '0.875rem',
-  },
-};
 
 export default App;

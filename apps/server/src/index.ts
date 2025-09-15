@@ -36,9 +36,8 @@ const upload = multer({
   },
 });
 
-// Serve static files from the web build (frontend)
-const publicPath = path.join(__dirname, '../public');
-app.use(express.static(publicPath));
+// Serve static files (frontend)
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API endpoints
 app.get('/api/health', (req, res) => {
@@ -106,7 +105,7 @@ app.post('/api/trace', upload.single('image'), async (req, res): Promise<void> =
 
 // Catch-all handler: send back the frontend's index.html file
 app.get('*', (req, res) => {
-  const indexPath = path.join(publicPath, 'index.html');
+  const indexPath = path.join(__dirname, '../public/index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('Error serving index.html:', err);
@@ -129,7 +128,6 @@ app.use((error: any, req: any, res: any, next: any) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 PNG2Vector server running on port ${PORT}`);
-  console.log(`📁 Serving frontend from: ${publicPath}`);
   console.log(`🔗 Open http://localhost:${PORT} in your browser`);
 });
 

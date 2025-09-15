@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --rootDir ../.. --outDir dist --skipLibCheck && mkdir -p dist/apps/server/public && cp -r public/* dist/apps/server/public/ || echo 'No public files to copy'",
+    "build": "tsc",
     "start": "node dist/apps/server/src/index.js",
     "test": "jest",
     "lint": "eslint src --ext .ts"

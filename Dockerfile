@@ -1,104 +1,47 @@
-# Suggested .dockerignore
-#
-# # Dependencies
-# node_modules
-#
-# # Build artifacts
-# dist
-# .next
-#
-# # Logs & temp files
-# *.log
-# .DS_Store
-#
-# # Local Environment
-# .env
-# .env.*
-# !.env.example
-#
-# # Git & OS
-# .git
-# .vscode
-
-# ==============================================================================
-# Build Stage ------------------------------------------------------------------
-# This stage installs all dependencies (dev included), sanitizes JSON files,
-# builds the project, and then prunes to production-only dependencies.
-# ==============================================================================
+# Multi-stage build for PNG2Vector monorepo
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# 1. Install sanitization tool globally
-RUN npm install -g strip-json-comments-cli
-
-# 2. Copy only package manifests to leverage Docker cache
+# Install dependencies
 COPY package*.json ./
 COPY apps/server/package.json ./apps/server/
 COPY apps/web/package.json ./apps/web/
+RUN npm ci --workspaces
 
-# 3. Sanitize all package.json and package-lock.json files recursively (for npm install)
-RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
-
-# 4. Install all dependencies for the entire monorepo
-RUN npm install --workspaces --include-workspace-root
-
-# 5. Copy the rest of the source code (this overwrites the sanitized manifests)
+# Copy source code
 COPY . .
 
-# 6. Sanitize the package.json files AGAIN (for npm run build)
-RUN find . -name "package*.json" -exec sh -c 'strip-json-comments "$0" > "$0.tmp" && mv "$0.tmp" "$0"' {} \;
+# Build both applications
+RUN npm run build
 
-# 7. Build both the 'server' and 'web' workspaces
-RUN echo "Starting build process..."
-RUN echo "Building server workspace using proper TypeScript project config:"
-RUN npm run build --workspace=apps/server || (echo "Server build failed!" && exit 1)
-RUN echo "Building web workspace:"
-RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
-RUN echo "Build completed. Checking dist directories:"
-RUN ls -la apps/server/dist/ || echo "apps/server/dist not found"
-RUN ls -la apps/web/dist/ || echo "apps/web/dist not found"
-RUN test -f apps/server/dist/index.js && echo "✅ index.js found" || echo "❌ index.js NOT found"
-
-# 8. Prune development-only dependencies
-RUN npm prune --production --workspaces --include-workspace-root
-
-
-# ==============================================================================
-# Runtime Stage ----------------------------------------------------------------
-# This final stage is a slim image containing only the built application,
-# production dependencies, and necessary runtime tools.
-# ==============================================================================
+# Production stage
 FROM node:20-slim AS runtime
 
 WORKDIR /app
 
-# 1. Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-
-# 2. Install curl for the HEALTHCHECK
+# Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# 3. Copy necessary artifacts from the 'builder' stage
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/apps/server/dist ./apps/server/dist
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/dist ./apps/server/public
-COPY --from=builder --chown=nodejs:nodejs /app/shared ./shared
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/apps/server/package.json ./apps/server/
-COPY --from=builder --chown=nodejs:nodejs /app/apps/web/package.json ./apps/web/
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs
 
-# 4. Switch to the non-root user
+# Copy package files and install production dependencies
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/apps/server/package.json ./apps/server/
+RUN npm ci --only=production --workspaces
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app/apps/server/dist ./
+COPY --from=builder --chown=nodejs:nodejs /app/apps/server/public ./public
+COPY --from=builder --chown=nodejs:nodejs /app/models ./models
+
 USER nodejs
 
-# 5. Expose the port the app will listen on.
 EXPOSE 8080
 
-# 6. Add a healthcheck for Railway to monitor the application's health
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl --fail http://localhost:8080/api/health || curl --fail http://localhost:8080/ || exit 1
+  CMD curl --fail http://localhost:8080/api/health || exit 1
 
-# 7. Define the command to start the server
-# Try main server, fallback to simpler versions
-CMD ["sh", "-c", "echo 'Checking for server files...'; if [ -f apps/server/dist/apps/server/src/index.js ]; then echo 'Starting main server'; node apps/server/dist/apps/server/src/index.js; elif [ -f apps/server/dist/apps/server/src/simple.js ]; then echo 'Starting simple test server'; node apps/server/dist/apps/server/src/simple.js; else echo 'No server files found'; ls -la apps/server/dist/; find apps/server -name '*.js' -type f || echo 'No JS files anywhere'; exit 1; fi"]
+CMD ["node", "apps/server/src/index.js"]
