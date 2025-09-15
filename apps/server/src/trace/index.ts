@@ -1,4 +1,3 @@
-// filename: apps/server/src/trace/index.ts
 import { PNG } from 'pngjs';
 import { extractContours, simplifyContours } from './contour';
 import { validateGeometry, cleanupGeometry } from './geometry';

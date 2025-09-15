@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.traceImage = traceImage;
-// filename: apps/server/src/trace/index.ts
 const pngjs_1 = require("pngjs");
 const contour_1 = require("./contour");
 const geometry_1 = require("./geometry");

@@ -11,7 +11,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
     "dev:server": "npm run dev --workspace=apps/server",
     "dev:web": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/server && npm run build --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web && mkdir -p apps/server/public && cp -r apps/web/dist/* apps/server/public/ && npm run build --workspace=apps/server",
     "start": "npm run start --workspace=apps/server",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
