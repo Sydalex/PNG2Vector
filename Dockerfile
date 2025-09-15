@@ -61,7 +61,12 @@ RUN echo "Testing minimal TypeScript compilation:"
 RUN cd apps/server && npx tsc src/minimal-server.ts --outDir dist --target ES2022 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --moduleResolution node || echo "Minimal compilation failed"
 RUN ls -la apps/server/dist/ || echo "No dist created"
 RUN echo "Now trying full server build:"
-RUN npm run build --workspace=apps/server 2>&1 || (echo "❌ Server build failed!" && echo "Checking TypeScript installation:" && npx tsc --version && exit 1)
+RUN echo "Checking source files before build:"
+RUN ls -la apps/server/src/
+RUN echo "Running TypeScript compilation with verbose output:"
+RUN cd apps/server && npx tsc --listFiles --listEmittedFiles || echo "Direct tsc failed"
+RUN echo "Running via npm script:"
+RUN npm run build --workspace=apps/server --verbose 2>&1 || (echo "❌ Server build failed!" && echo "Checking TypeScript installation:" && npx tsc --version && exit 1)
 RUN echo "Building web workspace:"
 RUN npm run build --workspace=apps/web || (echo "Web build failed!" && exit 1)
 RUN echo "Build completed. Checking dist directories:"
